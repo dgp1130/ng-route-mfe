@@ -17,6 +17,16 @@ export function app(): express.Express {
   server.set('view engine', 'html');
   server.set('views', browserDistFolder);
 
+  // Internal redirect `/mfe2/{path}` -> `/{path}`.
+  // This allows `express.static` to ignore the `/mfe2` prefix.
+  server.get('**', (req, _res, next) => {
+    if (req.url.startsWith('/mfe2')) {
+      req.url = req.url === '/mfe2' ? '/' : req.url.replace('/mfe2', '');
+    }
+
+    next('route');
+  });
+
   // Example Express Rest API endpoints
   // server.get('/api/**', (req, res) => { });
   // Serve static files from /browser
