@@ -13,6 +13,7 @@
         "outputPath": "dist/apps/mfe1",
         "index": "apps/mfe1/src/index.html",
         "browser": "apps/mfe1/src/main.ts",
+        "baseHref": "/mfe1/",
         "polyfills": ["zone.js"],
         "tsConfig": "apps/mfe1/tsconfig.app.json",
         "assets": [
@@ -56,7 +57,8 @@
     "serve": {
       "executor": "@angular-devkit/build-angular:dev-server",
       "options": {
-        "port": 4201
+        "port": 4201,
+        "servePath": "/mfe1"
       },
       "configurations": {
         "production": {

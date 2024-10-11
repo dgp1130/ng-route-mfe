@@ -5,7 +5,7 @@ import { Path2Component } from '../path2/path2.component';
 import { Path3Component } from '../path3/path3.component';
 
 export const appRoutes: Route[] = [
-    { path: '', redirectTo: 'mfe1', pathMatch: 'full' },
+    { path: '', loadComponent: () => HomeComponent },
     { path: 'mfe1', loadComponent: () => HomeComponent },
     { path: 'mfe1/path1', loadComponent: () => Path1Component },
     { path: 'mfe1/path2', loadComponent: () => Path2Component },
