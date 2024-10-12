@@ -24,6 +24,21 @@
         }
       }
     },
+    "runAll": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "(cd dist/apps/mfe1/ && node server/server.mjs)",
+          "(cd dist/apps/mfe2/ && node server/server.mjs)",
+          "(cd dist/apps/proxy/ && node main.js)"
+        ]
+      },
+      "dependsOn": [
+        "mfe1:build",
+        "mfe2:build",
+        "build"
+      ]
+    },
     "test": {
       "executor": "@nx/jest:jest",
       "outputs": [
