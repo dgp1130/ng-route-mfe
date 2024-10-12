@@ -1,101 +1,143 @@
-# NgRouteMfe
+# Angular Route Sharding Micro-Frontend
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+This is a "micro-frontend" app implemented via route sharding.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+## Features
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+*   No module federation or any of the complexity that brings.
+*   `application` builder-compatible.
+*   SSR-compatible.
+*   No community libraries.
+*   Minimal performance cost.
 
-## Run tasks
+## Costs
 
-To run the dev server for your app, use:
+*   Micro-frontends must be separated by routes.
+    *   You can still use module federation to put two MFEs on the same page,
+        you just don't need to unless it is useful to do so.
+*   Navigating between micro-frontends requires a hard navigation.
+*   Requires an additional proxy server deployment in additional to MFE deployments.
+*   Route claiming and discovery may benefit from additional tooling.
 
-```sh
-npx nx serve mfe1
-```
+## Architecture
 
-To create a production bundle:
+Micro-frontends want an isolated environment where they can be live independently
+of all other apps built at different times with unknown code. Typically, module
+federation allows multiple apps to be independently bundled but exist on the same
+page and share code. However, browsers already have a mechanism for creating truly
+isolated environments between applications: web pages.
 
-```sh
-npx nx build mfe1
-```
+Each page load is completely isolated from the ones before and after. This MFE
+approach takes advantage of that by "sharding" the application routes between MFEs.
+Each MFE "claims" a set of routes in the application. When the user visits routes
+within the MFE, it performs normal "soft" navigations between them. When the user
+visit a route owned by a different MFE, it performs a hard navigation and loads
+that MFE from scratch.
 
-To see all available targets to run for a project, run:
+A small proxy server makes this work by knowing which route is owned by which MFE
+and then redirecting each request to the relevant server which owns that MFE.
 
-```sh
-npx nx show project mfe1
-```
+TODO: Diagram
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+This architecture gives each MFE full control over all the routes they claim with no
+risk of interference by other MFEs.
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Local Development
 
-## Add new projects
+Run the whole stack with `nx run proxy:runAll` and open
+[http://localhost:4200/](http://localhost:4200/).
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+## FAQ
 
-Use the plugin's generator to create new projects.
+### Is this technically an MFE?
 
-To generate a new application, use:
+This depends on the definition of "Micro-frontend". Does it require getting multiple,
+independently-built web applications to interoperate with each other in a single user
+experience? Or does it specifically require getting independently-built JavaScript
+code to coexist on the same page? If you choose the latter definition, then no, this
+is not an MFE architecture.
 
-```sh
-npx nx g @nx/angular:app demo
-```
+However, I choose the former definition. Because the technical solution to any given
+problem doesn't matter as long as it solves that problem. Here, the problem is release
+independence of multiple web applications which coexist in the same user experience.
+The user doesn't think in terms of build times.
 
-To generate a new library, use:
+"Well, if you can't tell, does it matter?"
 
-```sh
-npx nx g @nx/angular:lib mylib
-```
+### How do I share code between MFEs?
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+Use a shared library which is built with each MFE.
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+It is comparatively easy to create shared libraries and then use those libraries
+across multiple MFEs. Each application can build its library dependencies and include
+its own copy of them. Each MFE gets its own version of that dependency, meaning they
+are not tied to a single version or forced to upgrade in lock-step.
 
-## Set up CI!
+If you really want to use module federation to link in a library built at a different
+time, that is possible with this architecture. Nothing actively prevents it. This
+architecture just makes the need for module federation as a solution significantly
+less important and many more use cases can get by without needing to pull on that
+particular lever.
 
-### Step 1
+### What are the performance implications?
 
-To connect to Nx Cloud, run the following command:
+Every navigation between different MFEs is a hard navigation, therefore the browser
+needs to effectively start over from scratch. This makes initial page load performance
+significantly more important than a typical SPA. SSR is especially important to mitigate
+this particular rough edge.
 
-```sh
-npx nx connect
-```
+Performance within a single MFE should be effectively unchanged. Because each MFE is just
+an independent application, there is no performance cost they need to pay. Internal
+navigations work just like any other SPA and have identical performance to a non-MFE app.
+It's only cross-MFE navigation which must be hard navigations.
 
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+It's worth remembering that all MFE solutions has a performance and reliability cost to
+them. Module federation in particular negatively impacts tree shaking and frequently
+duplicates dependencies. Those dependencies can be deduplicated, but that just trades
+improved performance for reduced reliability, as all MFEs must now share the same version
+of that dependency which makes upgrades more difficult. This route sharding architecture
+makes it own trade offs in this space, but this approach is comparatively more reliable
+than module federation (no shared dependencies at all) without taking on much of a
+performance cost for SSR-enabled applications with strong initial page load performance.
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### How do we get multiple MFEs to work together?
 
-### Step 2
+They link to each other (and maybe write to shared storage).
 
-Use the following command to configure a CI workflow for your workspace:
+MFEs by their nature are supposed to be independent applications without tight coupling
+between each other. Having one MFE closely coupled or dependent on another is a design
+smell. MFEs generally shouldn't share state or have specific knowledge of each other
+wherever it can be avoided. This is very similar to RPC microservices which frequently
+use independent data stores to avoid unintentional coupling through leaking data.
 
-```sh
-npx nx g ci-workflow
-```
+On the web, MFE state such as "What project am I operating on" should typically be kept
+in query parameters where MFEs can link between each other to propagate that state. More
+complex data like user authentication tokens or a data cache might be saved to an
+IndexedDB store with a common library to read/write to it across multiple MFEs. This
+allows one MFE to request some data, store it in the browser, and then the next MFE can
+read the same data without having to duplicate the request.
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+MFE isolation is more of a theoretical ideal than it is a practical goal, but the point
+here is that we don't need send references of JS functions from one MFE to another in
+order to have a cohesive application. The exact mechanisms for how to handle these
+integrations will vary form app to app based on the exact UX requirements.
 
-## Install Nx Console
+### How does caching work?
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+By default, each MFE is effectively cached independently of each other. If there is a
+significant amount of shared code/data between MFEs, it is potentially possible to have a
+shared CDN, browser cache, or data cache (stored in IndexedDB perhaps) which allows this
+data to be reused across MFEs. This example does not go to that extent, but it is entirely
+feasible to do so.
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Hacks
 
-## Useful links
+There's one notable hack needed to get this approach to work.
+[`routerLink` does not support navigating to routes outside the application](https://github.com/angular/angular/issues/24567#issuecomment-877301902),
+meaning it will never perform a hard navigation to another MFE.
 
-Learn more:
+To make this happen, we add a 404 route handler with a guard which triggers a hard
+navigation. This is not really how guards are supposed to work, but it seems to work
+well enough.
 
-- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+TODO: Add an actual 404 route.
