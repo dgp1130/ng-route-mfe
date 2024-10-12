@@ -3,10 +3,10 @@ import { CommonModule } from '@angular/common';
 import { NavComponent } from "../nav/nav.component";
 
 @Component({
-  selector: 'app-home',
+  selector: 'app-mfe-root',
   standalone: true,
   imports: [CommonModule, NavComponent],
-  templateUrl: './home.component.html',
-  styleUrl: './home.component.css',
+  templateUrl: './root.component.html',
+  styleUrl: './root.component.css',
 })
-export class HomeComponent {}
+export class RootComponent {}
