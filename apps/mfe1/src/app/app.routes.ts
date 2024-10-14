@@ -2,22 +2,17 @@ import { isPlatformBrowser } from '@angular/common';
 import { inject, PLATFORM_ID } from '@angular/core';
 import { ActivatedRouteSnapshot, Route } from '@angular/router';
 import { HomeComponent } from '../home/home.component';
-import { NotFoundComponent } from '../not-found/not-found.component';
-import { Path1Component } from '../path1/path1.component';
-import { Path2Component } from '../path2/path2.component';
-import { Path3Component } from '../path3/path3.component';
-import { RootComponent } from '../root/root.component';
 
 export const appRoutes: Route[] = [
     { path: '', loadComponent: () => HomeComponent },
     {
         path: 'mfe1',
         children: [
-            { path: '', loadComponent: () => RootComponent },
-            { path: 'path1', loadComponent: () => Path1Component },
-            { path: 'path2', loadComponent: () => Path2Component },
-            { path: 'path3', loadComponent: () => Path3Component },
-            { path: '**', loadComponent: () => NotFoundComponent },
+            { path: '', loadComponent: () => import('../root/root.component').then((m) => m.RootComponent) },
+            { path: 'path1', loadComponent: () => import('../path1/path1.component').then((m) => m.Path1Component) },
+            { path: 'path2', loadComponent: () => import('../path2/path2.component').then((m) => m.Path2Component) },
+            { path: 'path3', loadComponent: () => import('../path3/path3.component').then((m) => m.Path3Component) },
+            { path: '**', loadComponent: () => import('../not-found/not-found.component').then((m) => m.NotFoundComponent) },
         ],
     },
     {
