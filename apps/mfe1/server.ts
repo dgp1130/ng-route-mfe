@@ -17,10 +17,17 @@ export function app(): express.Express {
   server.set('view engine', 'html');
   server.set('views', browserDistFolder);
 
-  // Internal redirect `/mfe1/{path}` -> `/{path}`.
+  // Internal redirect `/mfe1/{path}.{ext}` -> `/{path}.{ext}`.
   // This allows `express.static` to ignore the `/mfe1` prefix.
+  // We limit this to files with extensions, because `express.static` may serve pre-rendered HTML pages
+  // which should not be affected by this transform.
+  // Also we exempt `index.html` files specifically, since users may request `/` and `/index.html`, both of
+  // which should return the same content.
   server.get('**', (req, _res, next) => {
-    if (req.url.startsWith('/mfe1')) {
+    // TODO: How to allow routes with `.` in them?
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const file = req.url.split('/').at(-1)!;
+    if (file.includes('.') && !file.endsWith('.html') && req.url.startsWith('/mfe1')) {
       req.url = req.url === '/mfe1' ? '/' : req.url.replace('/mfe1', '');
     }
 
@@ -35,6 +42,8 @@ export function app(): express.Express {
     express.static(browserDistFolder, {
       maxAge: '1y',
       index: 'index.html',
+      // Don't redirect `/foo` to `/foo/`, Angular would immediately client-side redirect back to `/foo` anyways.
+      redirect: false,
     })
   );
 
