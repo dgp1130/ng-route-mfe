@@ -286,3 +286,23 @@ be mitigated by having stable route claims. For example, limiting an MFE to a su
 will without affecting the proxy server or any other MFE. It's only when adding a new claim outside
 `/mfe1/**`, such as `/some/other/route` where the proxy server needs to be updated to route
 correctly.
+
+## `baseHref`
+
+Handling the `<base href="...">` tag correctly and configuring the router was a bit tricky to get
+right. Ultimately it works with a combination of:
+
+* `baseHref: "/mfe{1,2}/` in `application` builder (trailing slash is load bearing).
+* `{ provide: APP_BASE_HREF, useValue: '/' }` for the router at runtime.
+
+This repo also overwrites the build configuration with `baseHref: "/"` when running from a
+devserver. The reason for this is because MFE1 needs to support rendering the `/` path. If we left
+`baseHref: "/mfe1/"` for the devserver, it would 302 redirect from `/` to `/mfe1`, and the `/` route
+wouldn't be accessible via SSR. Using `baseHref: "/"` for devserver builds avoids this.
+
+One small downside is that in production, assets such as `main.js`, `styles.css`, etc. are hosted at
+`/mfe{1,2}/*`, which is critical for ensuring MFE assets don't conflict with each other. However the
+devserver hosts the same content at `/*`. `servePath: "/mfe{1,2}"` in the devserver configuration
+would fix this, but then it would be misaligned with `baseHref` and fail to load assets correctly.
+Ultimately having the devserver and production server host these assets at different paths doesn't
+really matter, Angular still loads them correctly. It's just a weird inconsistency.

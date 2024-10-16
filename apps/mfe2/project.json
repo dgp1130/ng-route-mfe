@@ -50,6 +50,9 @@
           "optimization": false,
           "extractLicenses": false,
           "sourceMap": true
+        },
+        "devserver": {
+          "baseHref": "/"
         }
       },
       "defaultConfiguration": "production"
@@ -57,15 +60,14 @@
     "serve": {
       "executor": "@angular-devkit/build-angular:dev-server",
       "options": {
-        "port": 4202,
-        "servePath": "/mfe2"
+        "port": 4202
       },
       "configurations": {
         "production": {
-          "buildTarget": "mfe2:build:production"
+          "buildTarget": "mfe2:build:production,devserver"
         },
         "development": {
-          "buildTarget": "mfe2:build:development"
+          "buildTarget": "mfe2:build:development,devserver"
         }
       },
       "defaultConfiguration": "development"
