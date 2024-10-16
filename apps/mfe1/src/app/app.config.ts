@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { appRoutes } from './app.routes';
 import { provideClientHydration } from '@angular/platform-browser';
 import { APP_BASE_HREF } from '@angular/common';
-import { NavigationTracker } from '../navigation-tracker.service';
+import { NavigationTracker } from '@ng-route-mfe/common';
 
 export const appConfig: ApplicationConfig = {
   providers: [

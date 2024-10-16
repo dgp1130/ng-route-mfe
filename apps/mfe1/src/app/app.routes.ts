@@ -1,11 +1,10 @@
 import { isPlatformBrowser } from '@angular/common';
 import { inject, PLATFORM_ID } from '@angular/core';
 import { ActivatedRouteSnapshot, Route } from '@angular/router';
-import { HomeComponent } from '../home/home.component';
-import { NavigationTracker } from '../navigation-tracker.service';
+import { NavigationTracker } from '@ng-route-mfe/common';
 
 export const appRoutes: Route[] = [
-    { path: '', loadComponent: () => HomeComponent },
+    { path: '', loadComponent: () => import('../home/home.component').then((m) => m.HomeComponent) },
     {
         path: 'mfe1',
         children: [
@@ -20,12 +19,14 @@ export const appRoutes: Route[] = [
         path: '**',
         canActivate: [
             (route: ActivatedRouteSnapshot) => {
-                // Render this route for a hard-navigation. This can happen for routes outside any MFE.
-                // The proxy server will pass them to MFE1, meaning we need to render the initial navigation.
+                // Render this route for a hard-navigation. This can happen for
+                // routes outside any MFE. The proxy server will pass them to
+                // MFE1, meaning we need to render the initial navigation.
                 const navTracker = inject(NavigationTracker);
                 if (!navTracker.hasNavigated) return true;
 
-                // Must be a client-side navigation to a URL outside MFE1, therefore we perform a hard-navigation.
+                // Must be a client-side navigation to a URL outside MFE1,
+                // therefore we perform a hard-navigation.
                 const platform = inject(PLATFORM_ID);
                 if (isPlatformBrowser(platform)) {
                     window.location.href = `/${route.url.join('/')}`;

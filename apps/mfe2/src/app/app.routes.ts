@@ -1,6 +1,7 @@
 import { PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRouteSnapshot, Route } from '@angular/router';
+import { NavigationTracker } from '@ng-route-mfe/common';
 
 export const appRoutes: Route[] = [
     {
@@ -17,6 +18,14 @@ export const appRoutes: Route[] = [
         path: '**',
         canActivate: [
             (route: ActivatedRouteSnapshot) => {
+                // Render this route for a hard-navigation. This can happen for
+                // routes outside any MFE. The proxy server will pass them to
+                // MFE1, meaning we need to render the initial navigation.
+                const navTracker = inject(NavigationTracker);
+                if (!navTracker.hasNavigated) return true;
+
+                // Must be a client-side navigation to a URL outside MFE1,
+                // therefore we perform a hard-navigation.
                 const platform = inject(PLATFORM_ID);
                 if (isPlatformBrowser(platform)) {
                     window.location.href = `/${route.url.join('/')}`;
@@ -25,6 +34,15 @@ export const appRoutes: Route[] = [
                 return false;
             },
         ],
-        loadComponent: () => { throw new Error('Unused.'); },
+        loadComponent: () => {
+            if (typeof location !== 'undefined') {
+                // CSR error for opening devserver to the `/` path.
+                const root = new URL(location.href);
+                root.pathname = '/mfe2';
+                throw new Error(`Unsupported route. Did you mean to navigate to ${root.toString()}`);
+            } else {
+                throw new Error('Unsupported route.');
+            }
+        },
     },
 ];
