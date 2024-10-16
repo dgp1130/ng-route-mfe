@@ -2,7 +2,13 @@
   "name": "@ng-route-mfe/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "start": "nx run proxy:runAll --configuration development",
+    "prod": "nx run proxy:runAll",
+    "mfe1": "nx serve mfe1",
+    "mfe2": "nx serve mfe2",
+    "nx": "nx"
+  },
   "private": true,
   "dependencies": {
     "@angular/animations": "~18.2.0",
